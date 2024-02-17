@@ -37,9 +37,9 @@ public class AiManager {
                         "{数据分析的需求或者目标}\n" +
                         "请根据这两部分内容，按照以下止指定格式输出内容（此外不需要输出任何多余的开通、结尾、注释）\n" +
                         "【【【【【\n" +
-                        "{前端 Echarts V5 的 option 配置对象 json 代码，合理地将数据进行可视化，不要生成任何多余地内容，比如注释}\n" +
+                        "{先生成前端 Echarts V5 的 option 配置对象 JSON 代码，合理地将数据进行可视化，不要生成任何多余地内容，比如注释}\n" +
                         "【【【【【\n" +
-                        "{结论是必须的，明确地数据分析结论、越详细越好，不要生成多余地注释}"));
+                        "{然后生成上面数据的分析结论，不要生成多余地注释}"));
         messages.add(SparkMessage.userContent(message));
         // 构造请求
         SparkRequest sparkRequest=SparkRequest.builder()
@@ -60,7 +60,6 @@ public class AiManager {
             // 同步调用
             SparkSyncChatResponse chatResponse = sparkClient.chatSync(sparkRequest);
             SparkTextUsage textUsage = chatResponse.getTextUsage();
-
             System.out.println("\n回答：" + chatResponse.getContent());
             System.out.println("\n提问tokens：" + textUsage.getPromptTokens()
                     + "，回答tokens：" + textUsage.getCompletionTokens()
