@@ -39,3 +39,32 @@ create table if not exists user
     isDelete     tinyint      default 0                 not null comment '是否删除',
     index idx_userAccount (userAccount)
 ) comment '用户表' collate = utf8mb4_unicode_ci;
+
+-- 文本任务表
+create table if not exists text_task
+(
+    id             bigint auto_increment comment '任务id' primary key,
+    `name`         varchar(128)                       null comment '笔记名称',
+    textType       varchar(128)                       null comment '文本类型',
+    genTextContent text                               null comment '生成的文本内容',
+    userId         bigint                             null comment '创建用户Id',
+    `status`       varchar(128)                       not null default 'wait' comment 'wait,running,succeed,failed',
+    execMessage    text                               null comment '执行信息',
+    createTime     datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime     datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete       tinyint  default 0                 not null comment '是否删除'
+) comment '文本任务表' collate = utf8mb4_unicode_ci;
+
+-- 文本记录表
+create table if not exists text_record
+(
+    id             bigint auto_increment comment 'id' primary key,
+    textTaskId     bigint comment '文本任务id',
+    textContent    text                               null comment '文本内容',
+    genTextContent text                               null comment '生成的文本内容',
+    `status`       varchar(128)                       not null default 'wait' comment 'wait,running,succeed,failed',
+    execMessage    text                               null comment '执行信息',
+    createTime     datetime default CURRENT_TIMESTAMP not null comment '创建时间',
+    updateTime     datetime default CURRENT_TIMESTAMP not null on update CURRENT_TIMESTAMP comment '更新时间',
+    isDelete       tinyint  default 0                 not null comment '是否删除'
+) comment '文本记录表' collate = utf8mb4_unicode_ci;
