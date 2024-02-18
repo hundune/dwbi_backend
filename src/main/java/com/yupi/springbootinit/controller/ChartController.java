@@ -6,13 +6,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.yupi.springbootinit.annotation.AuthCheck;
 import com.yupi.springbootinit.bizmq.BiMessageProducer;
+import com.yupi.springbootinit.bizmq.common.MqMessageProducer;
 import com.yupi.springbootinit.common.BaseResponse;
 import com.yupi.springbootinit.common.DeleteRequest;
 import com.yupi.springbootinit.common.ErrorCode;
 import com.yupi.springbootinit.common.ResultUtils;
-import com.yupi.springbootinit.constant.CommonConstant;
-import com.yupi.springbootinit.constant.FileConstant;
-import com.yupi.springbootinit.constant.UserConstant;
+import com.yupi.springbootinit.constant.*;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
 import com.yupi.springbootinit.manager.AiManager;
@@ -24,6 +23,7 @@ import com.yupi.springbootinit.model.dto.file.UploadFileRequest;
 import com.yupi.springbootinit.model.entity.Chart;
 import com.yupi.springbootinit.model.entity.User;
 import com.yupi.springbootinit.model.enums.FileUploadBizEnum;
+import com.yupi.springbootinit.model.vo.AiResponse;
 import com.yupi.springbootinit.model.vo.BiResponse;
 import com.yupi.springbootinit.model.vo.Col;
 import com.yupi.springbootinit.service.ChartService;
@@ -79,6 +79,9 @@ public class ChartController {
 
     @Resource
     private BiMessageProducer biMessageProducer;
+
+    @Resource
+    private MqMessageProducer mqMessageProducer;
 
 
     // region 增删改查
@@ -501,6 +504,46 @@ public class ChartController {
 
         BiResponse biResponse = new BiResponse();
         biResponse.setChartId(newChartId);
+        return ResultUtils.success(biResponse);
+    }
+
+    /**
+     * 图表重新生成(mq)
+     *
+     * @param chartRebuildRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/gen/async/rebuild")
+    public BaseResponse<BiResponse> genChartAsyncAiRebuild(ChartRebuildRequest chartRebuildRequest, HttpServletRequest request) {
+        Long chartId = chartRebuildRequest.getId();
+        Chart genChartByAiRequest = chartService.getById(chartId);
+        String chartType = genChartByAiRequest.getChartType();
+        String goal = genChartByAiRequest.getGoal();
+        String name = genChartByAiRequest.getName();
+        String chartData = genChartByAiRequest.getChartData();
+
+        //校验
+        ThrowUtils.throwIf(StringUtils.isBlank(goal),ErrorCode.PARAMS_ERROR,"目标为空");
+        ThrowUtils.throwIf(StringUtils.isNotBlank(name)&&name.length()>=100,ErrorCode.PARAMS_ERROR,"名称过长");
+        ThrowUtils.throwIf(StringUtils.isBlank(chartData),ErrorCode.PARAMS_ERROR,"表格数据为空");
+        ThrowUtils.throwIf(StringUtils.isBlank(chartType),ErrorCode.PARAMS_ERROR,"生成表格类型为空");
+
+        User loginUser = userService.getLoginUser(request);
+        //限流
+        redisLimiterManager.doRateLimiter("doRateLimit_" + loginUser.getId());
+
+        //保存数据库 wait
+        Chart chart = new Chart();
+        chart.setStatus(ChartConstant.WAIT);
+        chart.setId(chartId);
+        boolean saveResult = chartService.updateById(chart);
+        ThrowUtils.throwIf(!saveResult,ErrorCode.SYSTEM_ERROR,"图表保存失败");
+        log.warn("准备发送信息给队列，Message={}=======================================",chartId);
+        mqMessageProducer.sendMessage(MqConstant.BI_EXCHANGE_NAME,MqConstant.BI_ROUTING_KEY,String.valueOf(chartId));
+        //返回数据参数
+        BiResponse biResponse = new BiResponse();
+        biResponse.setChartId(chart.getId());
         return ResultUtils.success(biResponse);
     }
 }

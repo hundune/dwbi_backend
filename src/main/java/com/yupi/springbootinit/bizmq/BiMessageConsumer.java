@@ -2,6 +2,7 @@ package com.yupi.springbootinit.bizmq;
 
 import com.rabbitmq.client.Channel;
 import com.yupi.springbootinit.common.ErrorCode;
+import com.yupi.springbootinit.constant.ChartConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.manager.AiManager;
 import com.yupi.springbootinit.model.entity.Chart;
@@ -45,6 +46,7 @@ public class BiMessageConsumer {
         Chart chart = chartService.getById(chartId);
         if(chart == null){
             channel.basicNack(deliverTag,false,false);
+            chart.setStatus(ChartConstant.FAILED);
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"图表为空");
         }
         // 先修改图表任务状态为 “执行中”，完成后修改为“已完成”；执行失败后，修改为“失败”，记录任务失败信息
@@ -54,6 +56,7 @@ public class BiMessageConsumer {
         boolean b = chartService.updateById(updateChart);
         if (!b) {
             channel.basicNack(deliverTag,false,false);
+            chart.setStatus(ChartConstant.FAILED);
             handleChartUpdateError(chart.getId(), "更新图表执行中状态失败");
             return;
         }
@@ -64,6 +67,7 @@ public class BiMessageConsumer {
         //校验,结果应该有 3
         if (splits.length < 3) {
             channel.basicNack(deliverTag,false,false);
+            chart.setStatus(ChartConstant.FAILED);
             handleChartUpdateError(chart.getId(), "AI 生成错误");
             return;
         }
@@ -77,6 +81,7 @@ public class BiMessageConsumer {
         boolean updateResult = chartService.updateById(updateChartResult);
         if (!updateResult) {
             channel.basicNack(deliverTag,false,false);
+            chart.setStatus(ChartConstant.FAILED);
             handleChartUpdateError(chart.getId(), "更新图表成功状态失败");
         }
         channel.basicAck(deliverTag,false);

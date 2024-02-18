@@ -200,6 +200,7 @@ public class TextController {
         }
         TextTaskVO textTaskVO = new TextTaskVO();
         BeanUtils.copyProperties(textTask,textTaskVO);
+        System.out.println(textTaskVO.getGenTextContent());
         return ResultUtils.success(textTaskVO);
     }
     /**
