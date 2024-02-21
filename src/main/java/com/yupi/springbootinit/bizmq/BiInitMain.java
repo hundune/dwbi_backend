@@ -23,80 +23,80 @@ import java.util.Map;
 @Configuration
 public class BiInitMain {
 
-    public static void main(String[] args) {
-        try{
-            ConnectionFactory factory = new ConnectionFactory();
-            factory.setHost("localhost");
-            Connection connection = factory.newConnection();
-            Channel channel = connection.createChannel();
-            Channel channel1 = connection.createChannel();
+//    public static void main(String[] args) {
+//        try{
+//            ConnectionFactory factory = new ConnectionFactory();
+//            factory.setHost("localhost");
+//            Connection connection = factory.newConnection();
+//            Channel channel = connection.createChannel();
+//            Channel channel1 = connection.createChannel();
+//
+//            String EXCHANGE_NAME = BiMqConstant.BI_EXCHANGE_NAME;
+//
+//            channel.exchangeDeclare(EXCHANGE_NAME, "direct");
+//
+//            String queueName1 = BiMqConstant.BI_QUEUE_NAME;
+//            channel.queueDeclare(queueName1, true, false, false, null);
+//
+//            String EXCHANGE_DEAD_NAME = MqConstant.BI_DEAD_EXCHANGE_NAME;
+//            String EXCHANGE_DEAD_QUEUE = MqConstant.BI_DEAD_QUEUE_NAME;
+//
+//            channel1.exchangeDeclare(EXCHANGE_DEAD_NAME, "direct");
+//            Map<String,Object> arg = new HashMap<>();
+//            arg.put("x-message-ttl",60000);
+//            //绑定死信交换机
+//            arg.put("x-dead-letter-exchange",EXCHANGE_DEAD_NAME);
+//            arg.put("x-dead-letter-routing-key",EXCHANGE_DEAD_QUEUE);
+//            channel1.queueDeclare(EXCHANGE_DEAD_QUEUE, false, false, false, arg);
+//
+//            channel.queueBind(queueName1, EXCHANGE_NAME, BiMqConstant.BI_ROUTING_KEY);
+//
+//            channel1.queueBind(EXCHANGE_DEAD_QUEUE,EXCHANGE_DEAD_NAME,MqConstant.BI_DEAD_ROUTING_KEY);
+//        }catch (Exception e){
+//
+//        }
+//    }
 
-            String EXCHANGE_NAME = BiMqConstant.BI_EXCHANGE_NAME;
-
-            channel.exchangeDeclare(EXCHANGE_NAME, "direct");
-
-            String queueName1 = BiMqConstant.BI_QUEUE_NAME;
-            channel.queueDeclare(queueName1, true, false, false, null);
-
-            String EXCHANGE_DEAD_NAME = MqConstant.BI_DEAD_EXCHANGE_NAME;
-            String EXCHANGE_DEAD_QUEUE = MqConstant.BI_DEAD_QUEUE_NAME;
-
-            channel1.exchangeDeclare(EXCHANGE_DEAD_NAME, "direct");
-            Map<String,Object> arg = new HashMap<>();
-            arg.put("x-message-ttl",60000);
-            //绑定死信交换机
-            arg.put("x-dead-letter-exchange",EXCHANGE_DEAD_NAME);
-            arg.put("x-dead-letter-routing-key",EXCHANGE_DEAD_QUEUE);
-            channel1.queueDeclare(EXCHANGE_DEAD_QUEUE, false, false, false, arg);
-
-            channel.queueBind(queueName1, EXCHANGE_NAME, BiMqConstant.BI_ROUTING_KEY);
-
-            channel1.queueBind(EXCHANGE_DEAD_QUEUE,EXCHANGE_DEAD_NAME,MqConstant.BI_DEAD_ROUTING_KEY);
-        }catch (Exception e){
-
-        }
+    /**
+     * 将死信队列和交换机声明
+     */
+    @Bean
+    Queue BiDeadQueue(){
+        return QueueBuilder.durable(MqConstant.BI_DEAD_QUEUE_NAME).build();
     }
 
-//    /**
-//     * 将死信队列和交换机声明
-//     */
-//    @Bean
-//    Queue BiDeadQueue(){
-//        return QueueBuilder.durable(MqConstant.BI_DEAD_QUEUE_NAME).build();
-//    }
-//
-//    @Bean
-//    DirectExchange BiDeadExchange() {
-//        return new DirectExchange(MqConstant.BI_DEAD_EXCHANGE_NAME);
-//    }
-//
-//    @Bean
-//    Binding BiDeadBinding(Queue BiDeadQueue, DirectExchange BiDeadExchange) {
-//        return BindingBuilder.bind(BiDeadQueue).to(BiDeadExchange).with(MqConstant.BI_DEAD_ROUTING_KEY);
-//    }
-//
-//    /**
-//     * 将队列和交换机声明
-//     */
-//    @Bean
-//    Queue BiQueue(){
-//        //信息参数 设置TTL为1min
-//        Map<String,Object> arg = new HashMap<>();
-//        arg.put("x-message-ttl",60000);
-//        //绑定死信交换机
-//        arg.put("x-dead-letter-exchange",MqConstant.BI_DEAD_EXCHANGE_NAME);
-//        arg.put("x-dead-letter-routing-key",MqConstant.BI_DEAD_ROUTING_KEY);
-//        return QueueBuilder.durable(MqConstant.BI_QUEUE_NAME).withArguments(arg).build();
-//    }
-//
-//    @Bean
-//    DirectExchange BiExchange() {
-//        return new DirectExchange(MqConstant.BI_EXCHANGE_NAME);
-//    }
-//
-//    @Bean
-//    Binding BiBinding(Queue BiQueue, DirectExchange BiExchange) {
-//        return BindingBuilder.bind(BiQueue).to(BiExchange).with(MqConstant.BI_ROUTING_KEY);
-//    }
+    @Bean
+    DirectExchange BiDeadExchange() {
+        return new DirectExchange(MqConstant.BI_DEAD_EXCHANGE_NAME);
+    }
+
+    @Bean
+    Binding BiDeadBinding(Queue BiDeadQueue, DirectExchange BiDeadExchange) {
+        return BindingBuilder.bind(BiDeadQueue).to(BiDeadExchange).with(MqConstant.BI_DEAD_ROUTING_KEY);
+    }
+
+    /**
+     * 将队列和交换机声明
+     */
+    @Bean
+    Queue BiQueue(){
+        //信息参数 设置TTL为1min
+        Map<String,Object> arg = new HashMap<>();
+        arg.put("x-message-ttl",60000);
+        //绑定死信交换机
+        arg.put("x-dead-letter-exchange",MqConstant.BI_DEAD_EXCHANGE_NAME);
+        arg.put("x-dead-letter-routing-key",MqConstant.BI_DEAD_ROUTING_KEY);
+        return QueueBuilder.durable(MqConstant.BI_QUEUE_NAME).withArguments(arg).build();
+    }
+
+    @Bean
+    DirectExchange BiExchange() {
+        return new DirectExchange(MqConstant.BI_EXCHANGE_NAME);
+    }
+
+    @Bean
+    Binding BiBinding(Queue BiQueue, DirectExchange BiExchange) {
+        return BindingBuilder.bind(BiQueue).to(BiExchange).with(MqConstant.BI_ROUTING_KEY);
+    }
 
 }

@@ -68,8 +68,8 @@ mybatis-plus:
       logic-not-delete-value: 0 # 逻辑未删除值（默认为 0）
 # 微信相关
 wx:
-  # 微信公众平台
-  # todo 需替换配置
+#   微信公众平台
+#   todo 需替换配置
   mp:
     token: xxx
     aesKey: xxx
